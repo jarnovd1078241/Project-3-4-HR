@@ -1,11 +1,14 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <Keypad.h>
+#include <Wire.h>
 
 #define SS_PIN 10
 #define RST_PIN A0
 
 String tagID = "";
+String inputString = "";
+bool sendData = false;
 
 // Create instances
 MFRC522 mfrc522(SS_PIN, RST_PIN);
@@ -23,10 +26,9 @@ char hexaKeys[ROWS][COLS] = {
 byte rowPins[ROWS] = {9, 8, 7, 6}; 
 byte colPins[COLS] = {5, 4, 3, 2}; 
 
-Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS); 
+Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 
-//setup
-void setup(){
+void setup() {
   Serial.begin(9600);
   SPI.begin();
 
@@ -37,14 +39,12 @@ void setup(){
   Serial.println("RFID reader gestart");
   Serial.println("Scan uw RFID tag...");
   Serial.println("");
-  
+
+  Wire.begin(9); 
+  Wire.onRequest(sendDataEvent); 
 }
 
-
-//loop
-void loop(){
-
-  //voert uit wanneer nieuwe tag wordt gelezen
+void loop() {
   while (getUID()) {
     Serial.println("----Tag gedetecteerd-----");
     Serial.println("UID: " + tagID);
@@ -53,26 +53,54 @@ void loop(){
     Serial.println("");
   }
 
-    char customKey = customKeypad.getKey();
+  char customKey = customKeypad.getKey();
   
   if (customKey){
-    Serial.println(customKey);
+    Serial.println("Key pressed: " + String(customKey)); 
+
+    if (customKey == 'C'){
+      inputString = "";
+    }
+    else if (customKey == 'L') {
+      inputString = "";
+    }
+    else if (customKey == 'E'){
+      Serial.println("Ingevoerde cijfers: " + inputString);
+      sendData = true; // Stel sendData in op true voordat de gegevens worden verzonden
+      Serial.println("Data verzenden naar master: " + inputString);
+      Wire.beginTransmission(8); 
+      Serial.println("Data verzenden naar master: " + inputString);
+      Wire.write(inputString.c_str()); 
+      Serial.println("Data verzenden naar master: " + inputString);
+      Wire.endTransmission(); 
+      inputString = ""; // Reset de inputString
+    }
+    else {
+      inputString += customKey; 
+    }
+  }
+
+  if (sendData) {
+    Wire.beginTransmission(8); 
+    Serial.println("Data verzenden naar master: " + inputString);
+    Wire.write(inputString.c_str()); 
+    Wire.endTransmission(); 
+    sendData = false; 
   }
 }
 
+void sendDataEvent() {
+  if (sendData) {
+    Wire.write(inputString.c_str()); 
+    sendData = false; 
+  }
+}
 
-// getUID
-// is true bij nieuwe tag
-// anders false
-
-boolean getUID(){
-  // Getting ready for Reading PICCs
-  //If a new PICC placed to RFID reader continue
+boolean getUID() {
   if ( ! mfrc522.PICC_IsNewCardPresent()) {
     return false;
   }
 
-  //Since a PICC placed get Serial and continue
   if ( ! mfrc522.PICC_ReadCardSerial()) {
     return false;
   }
@@ -84,6 +112,6 @@ boolean getUID(){
   }
   
   tagID.toUpperCase();
-  mfrc522.PICC_HaltA(); // Stop reading
+  mfrc522.PICC_HaltA(); 
   return true;
 }
