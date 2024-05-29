@@ -1,8 +1,15 @@
+//----------------------------setup----------------------------------------
+
 const express = require('express');
 const cors = require("cors");
 const app = express();
 const mysql = require('mysql');
+const bodyParser = require('body-parser');
+const moment = require('moment-timezone');
 
+// Middleware om JSON en URL-encoded bodies te parsen
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
 //Create database connections details
@@ -22,169 +29,380 @@ connection.connect((err) => {
     }
 });
 
-//Get pincode -> pasnummer
-app.get('/getpincode', (req, res) => {
-    const { pasnummer } = req.query;
 
-    if (!pasnummer) {
-        return res.status(400).json({ error: 'Pasnummer ontbreekt in de query parameters' });
+function checkSender(ip, token){
+    if(ip.includes("145.24.223.160") || token == "HIDDEWASHERE"){
+        return true;
+    } else return false;
+}
+
+
+//----------------------------Bank----------------------------------------
+
+
+//withdraw
+app.post('/api/withdraw', (req, res) => {
+
+    if(!(checkSender(req.ip, req.headers['wisb-token']))){
+        res.status(401);
+        res.send("Request niet vanaf een bekende Bank gedaan, helaas");
+        return;
     }
 
-    const query = `SELECT Pincode FROM Passen WHERE Pasnummer = ?`;
+    const rekeningnummer = req.query.target;
+    const pincode = req.body.pincode;
+    const pasnummer = req.body.uid;
+    const amount = req.body.amount;
+    
 
-    connection.query(query, [pasnummer], (err, results) => {
-        if (err) {
-            console.error('Fout bij het uitvoeren van de query:', err);
-            return res.status(500).json({ error: 'Interne serverfout' });
-        }
+    //check of url query correct is meegegeven
+    if (!rekeningnummer || !pincode || !pasnummer) {
+        return res.status(400).send("Query klopt niet, zorg ervoor dat je deze 3 in ieder geval hebt: 'target' 'uid' 'pincode'. Groetjes WisWatBank");
+    }
 
-        if (results.length === 0) {
-            return res.status(404).json({ error: 'Pasnummer niet gevonden' });
-        }
-
-        const pincode = results[0].Pincode;
-        res.json({ pincode });
-    });
-});
-
-//Get user info -> pasnummer
-app.get('/userinfo', (req, res) => {
-    const pasnummer = req.query.pasnummer;
-
-    // Query om gebruikersinformatie op te halen op basis van pasnummer
-    const query = `
-        SELECT Gebruikers.Voornaam, Gebruikers.Achternaam, Rekeningen.BalansCents, Rekeningen.Rekeningnummer
-        FROM Passen
-        JOIN Rekeningen ON Passen.Rekening_ID = Rekeningen.Rekening_ID
-        JOIN Gebruikers ON Rekeningen.Gebruikers_ID = Gebruikers.Gebruiker_ID
-        WHERE Passen.Pasnummer = '${pasnummer}'
+    //query
+    const sql = `SELECT 
+                    p.Pasnummer,
+                    p.Pincode,
+                    p.Foute_pogingen,
+                    r.Rekeningnummer,
+                    r.BalansCents,
+                    g.Voornaam,
+                    g.Achternaam
+                FROM 
+                    Passen p
+                JOIN 
+                    Rekeningen r ON p.Rekening_ID = r.Rekening_ID
+                JOIN 
+                    Gebruikers g ON r.Gebruikers_ID = g.Gebruiker_ID
+                WHERE 
+                    p.Pasnummer = '${pasnummer}';
     `;
 
     // Voer de query uit
-    connection.query(query, (err, results) => {
+    connection.query(sql, [pasnummer], (err, results) => {
         if (err) {
-            console.error('Fout bij uitvoeren van databasequery:', err);
-            res.status(500).send('Interne serverfout');
-            return;
+            console.error('Fout bij uitvoeren van de query:', err);
+            return res.status(500).send('Er is helaas iets mis gegaan bij ons. excuses van WisWatBank');
         }
 
-        // Controleer of er resultaten zijn     
-        if (results.length === 0) {
-            res.status(404).send('Gebruiker niet gevonden voor dit pasnummer');
-            return;
+        // Resultaten verwerken
+        if (results.length < 1) {
+            return res.status(404).send('Combinatie rekeningnummer en pasnummer niet gevonden in onze database. Groetjes WisWatBank');
         }
 
-        // Haal de gebruikersinformatie op uit de resultaten
+        const voornaam = results[0].Voornaam;
+        const achternaam = results[0].Achternaam;
+        balans = results[0].BalansCents;
+        remainingAttempts = 3-results[0].Foute_pogingen;
+        results[0].Pincode;
+        results[0].Rekeningnummer;
+
+        if(rekeningnummer != results[0].Rekeningnummer){
+            return res.status(404).send('Combinatie rekeningnummer en pasnummer niet gevonden in onze database. Groetjes WisWatBank');
+        }
+
+        if(results[0].Foute_pogingen >= 3){
+            return res.status(403).send('Deze pas is geblokkeerd door te veel foute pincodes. Groetjes WisWatBank');
+        }
+
+        if(pincode != results[0].Pincode){
+            const query = `
+                UPDATE Passen
+                SET Foute_pogingen = Foute_pogingen + 1
+                WHERE Pasnummer = ?;
+            `;
+            connection.query(query, [pasnummer]);
+            remainingAttempts -= 1;
+
+            if(remainingAttempts == 0){
+                return res.status(403).send('Deze pas is geblokkeerd door te veel foute pincodes. Groetjes WisWatBank');
+            }
+
+            return res.status(401).json({
+                attempts_remaining: remainingAttempts,
+            });
+
+        } else {
+            const query = `
+                UPDATE Passen
+                SET Foute_pogingen = 0
+                WHERE Pasnummer = ?;
+            `
+            connection.query(query, [pasnummer]);
+        }
+
+        if((balans - amount) < 0){
+            return res.status(412).send("Saldo te laag. Groetjes WisWatBank");
+        }
+
+        balans -= amount;
+
+        const query = `
+            UPDATE Rekeningen
+            SET BalansCents = ${balans}
+            WHERE Rekeningnummer = ?;
+        `;
+        connection.query(query, [results[0].Rekeningnummer]);
+
+        return res.status(200).send("Het bedrag is van de rekening afgeschreven. Groetjes WisWatBank");
+    });
+});
+
+
+//accountinfo
+app.post('/api/accountinfo', (req, res) => {
+
+    if(!(checkSender(req.ip, req.headers['wisb-token']))){
+        res.status(401);
+        res.send("Request niet vanaf een bekende Bank gedaan, helaas");
+        return;
+    }
+
+    const rekeningnummer = req.query.target;
+    const pincode = req.body.pincode;
+    const pasnummer = req.body.uid;
+
+    //check query
+    if (!rekeningnummer || !pincode || !pasnummer) {
+        return res.status(400).send("Sorry, het request lijkt niet te kloppen. Groetjes WisWatBank");
+    }
+
+    //query
+    const sql = `SELECT 
+                    p.Pasnummer,
+                    p.Pincode,
+                    p.Foute_pogingen,
+                    r.Rekeningnummer,
+                    r.BalansCents,
+                    g.Voornaam,
+                    g.Achternaam
+                FROM 
+                    Passen p
+                JOIN 
+                    Rekeningen r ON p.Rekening_ID = r.Rekening_ID
+                JOIN 
+                    Gebruikers g ON r.Gebruikers_ID = g.Gebruiker_ID
+                WHERE 
+                    p.Pasnummer = '${pasnummer}';
+    `;
+
+    //Run query
+    connection.query(sql, [pasnummer], (err, results) => {
+        if (err) {
+            console.error('Fout bij uitvoeren van de query:', err);
+            return res.status(500).send('Er is helaas iets mis gegaan bij ons. excuses van WisWatBank');
+        }
+
+        //Check results
+        if (results.length < 1) {
+            return res.status(404).send('Combinatie rekeningnummer en pasnummer niet gevonden in onze database. Groetjes WisWatBank');
+        }
+
         const voornaam = results[0].Voornaam;
         const achternaam = results[0].Achternaam;
         const balans = results[0].BalansCents;
-        const rekeningnummer = results[0].Rekeningnummer;
+        remainingAttempts = 3-results[0].Foute_pogingen;
+        results[0].Pincode;
+        results[0].Rekeningnummer;
 
-        // Stuur de gebruikersinformatie terug als JSON
-        res.status(200).json({
-            voornaam: voornaam,
-            achternaam: achternaam,
-            balans: balans,
-            rekeningnummer: rekeningnummer
+        if(rekeningnummer != results[0].Rekeningnummer){
+            return res.status(404).send('Combinatie rekeningnummer en pasnummer niet gevonden in onze database. Groetjes WisWatBank');
+        }
+
+        if(results[0].Foute_pogingen >= 3){
+            return res.status(403).send('Deze pas is geblokkeerd. Neem contact met ons op. Groetjes WisWatBank');
+        }
+
+        if(pincode != results[0].Pincode){
+            const query = `
+                UPDATE Passen
+                SET Foute_pogingen = Foute_pogingen + 1
+                WHERE Pasnummer = ?;
+            `;
+            connection.query(query, [pasnummer]);
+            remainingAttempts -= 1;
+
+            if(remainingAttempts == 0){
+                return res.status(403).send('Deze pas is geblokkeerd. Neem contact met ons op. Groetjes WisWatBank');
+            }
+
+            return res.status(401).json({
+                attempts_remaining: remainingAttempts,
+            });
+        }
+
+        const query = `
+            UPDATE Passen
+            SET Foute_pogingen = 0
+            WHERE Pasnummer = ?;
+        `
+        connection.query(query, [pasnummer]);
+
+        return res.status(200).json({
+            firstname: voornaam,
+            lastname: achternaam,
+            balance: balans,
         });
     });
 });
 
 
-//Change balance -> pasnummer&bedrag
-app.get('/adjustbalance', (req, res) => {
-    const pasnummer = req.query.pasnummer;
-    const bedrag = parseInt(req.query.bedrag);
+//----------------------------Logs----------------------------------------
 
-    // Zoek het rekeningnummer op basis van het pasnummer
-    const query = `SELECT Rekeningen.Rekeningnummer, Rekeningen.BalansCents
-                   FROM Passen
-                   JOIN Rekeningen ON Passen.Rekening_ID = Rekeningen.Rekening_ID
-                   WHERE Passen.Pasnummer = '${pasnummer}'`;
+//createlog
+app.post('/api/createlog', (req, res) => {
 
-    connection.query(query, (err, results) => {
-        if (err) {
-            console.error('Fout bij uitvoeren van databasequery:', err);
-            res.status(500).send('Interne serverfout');
-            return;
+    if(!(checkSender(req.ip, req.headers['wisb-token']))){
+        res.status(401);
+        res.send("Request niet vanaf een bekende Bank gedaan, helaas");
+        return;
+    }
+
+    rekeningnummer = req.body.target;
+    pasnummer = req.body.uid;
+
+
+    //check query
+    if (!rekeningnummer || !pasnummer) {
+        return res.status(400).send("Sorry, het request lijkt niet te kloppen. Groetjes WisWatBank");
+    }
+
+    //query
+    const sql = `
+    INSERT INTO Logs (Rekeningnummer, Pasnummer, LoginDate)
+    VALUES ('${rekeningnummer}', '${pasnummer}', '${moment().tz('Europe/Amsterdam').format('DD-MM-YYYY HH:mm:ss')}');
+    `;
+
+    connection.query(sql, (error, results, fields) => { 
+        if (error) {
+            console.error('Fout bij uitvoeren van de query:', error);
+            return res.status(500).send('Er is helaas iets mis gegaan bij ons. excuses van WisWatBank');
         }
-
-        if (results.length === 0) {
-            res.status(404).send('Rekening niet gevonden');
-            return;
-        }
-
-        const rekeningnummer = results[0].Rekeningnummer;
-        const huidigeBalans = results[0].BalansCents;
-        const nieuweBalans = huidigeBalans - bedrag;
-
-        // Update de balans van de rekening
-        const updateQuery = `UPDATE Rekeningen SET BalansCents = ${nieuweBalans} WHERE Rekeningnummer = '${rekeningnummer}'`;
-
-        connection.query(updateQuery, err => {
-            if (err) {
-                console.error('Fout bij bijwerken van balans:', err);
-                res.status(500).send('Interne serverfout');
+    
+        // Haal het laatst ingevoegde ID op
+        connection.query('SELECT LAST_INSERT_ID()', (error, results, fields) => {
+            if (error) {
+                console.error('Error executing SELECT LAST_INSERT_ID() query:', error);
                 return;
             }
-
-            console.log(`${bedrag} opgenomen van rekening ${rekeningnummer}. Nieuwe balans: ${nieuweBalans}`);
-            res.status(200).send(`${bedrag} opgenomen van rekening ${rekeningnummer}. Nieuwe balans: ${nieuweBalans}`);
+    
+            return res.status(200).json({
+                logsid: results[0]['LAST_INSERT_ID()']
+            }); 
         });
     });
 });
 
 
-//Manually set balance-> pasnummer
-app.get('/setbalance', (req, res) => {
-    const pasnummer = req.query.pasnummer;
-    const bedrag = parseInt(req.query.bedrag);
+//editlog
+app.post('/api/editlog', (req, res) => {
 
-    // Zoek het rekeningnummer op basis van het pasnummer
-    const query = `SELECT Rekeningen.Rekeningnummer, Rekeningen.BalansCents
-                   FROM Passen
-                   JOIN Rekeningen ON Passen.Rekening_ID = Rekeningen.Rekening_ID
-                   WHERE Passen.Pasnummer = '${pasnummer}'`;
+    if(!(checkSender(req.ip, req.headers['wisb-token']))){
+        res.status(401);
+        res.send("Request niet vanaf een bekende Bank gedaan, helaas");
+        return;
+    }
 
-    connection.query(query, (err, results) => {
-        if (err) {
-            console.error('Fout bij uitvoeren van databasequery:', err);
-            res.status(500).send('Interne serverfout');
-            return;
-        }
+    logsid = req.body.logsid;
+    balancebefore = req.body.balancebefore;
+    withdrawn = req.body.withdrawn;
+    state = req.body.state;
 
-        if (results.length === 0) {
-            res.status(404).send('Rekening niet gevonden');
-            return;
-        }
+    if (!logsid || !state) {
+        return res.status(400).send("Sorry, het request lijkt niet te kloppen. Groetjes WisWatBank");
+    }
+    
+    if(state == 401){
+        sql = `
+        UPDATE Logs
+        SET WrongAttempts = WrongAttempts + 1
+        WHERE idLogs = ${logsid};
+        `;
 
-        const rekeningnummer = results[0].Rekeningnummer;
+        connection.query(sql);
+    }
 
-        // Update de balans van de rekening
-        const updateQuery = `UPDATE Rekeningen SET BalansCents = ${bedrag} WHERE Rekeningnummer = '${rekeningnummer}'`;
+    if(state == 403){
+        sql = `
+        UPDATE Logs
+        SET Status = 'Geblokkeerd'
+        WHERE idLogs = ${logsid};
+        `;
 
-        connection.query(updateQuery, err => {
-            if (err) {
-                console.error('Fout bij bijwerken van balans:', err);
-                res.status(500).send('Interne serverfout');
-                return;
-            }
+        connection.query(sql);
+    }
 
-            console.log(`Balans van rekening ${rekeningnummer} handmatig aangepast naar ${bedrag}`);
-            res.status(200).send(`Balans van rekening ${rekeningnummer} handmatig aangepast naar ${bedrag}`);
-        });
-    });
+    if(state == 404){
+        sql = `
+        UPDATE Logs
+        SET Status = 'Niet bestaand'
+        WHERE idLogs = ${logsid};
+        `;
+
+        connection.query(sql);
+    }
+
+    if (state == 200 && withdrawn){
+        sql = `
+        UPDATE Logs
+        SET BalanceBefore = ${balancebefore}, Status = 'OK', Withdrawn = ${withdrawn*100}, WithdrawDate = '${moment().tz('Europe/Amsterdam').format('DD-MM-YYYY HH:mm:ss')}'
+        WHERE idLogs = ${logsid};
+        `;
+
+        connection.query(sql);
+    }
+
+    if(state == 200){
+        sql = `
+        UPDATE Logs
+        SET BalanceBefore = ${balancebefore}, Status = 'OK'
+        WHERE idLogs = ${logsid};
+        `;
+
+        connection.query(sql);
+    } 
+
+    return res.status(200).send("Log is aangepast");
+});
+
+
+//----------------------------overig----------------------------------------
+
+
+//reset foute pogingen
+app.get('/api/reset', (req, res) => {
+    const pasnummer = req.query.uid;
+
+    const query = `
+                    UPDATE Passen
+                    SET Foute_pogingen = 0
+                    WHERE Pasnummer = ?;
+                `
+    connection.query(query, [pasnummer]);
+    return res.status(200).send('Foute pogingen gereset');
 });
 
 
 //Noob API
 app.get("/api/noob/health", (req, res) => {
+    if(!(checkSender(req.ip, req.headers['wisb-token']))){
+        res.status(401);
+        res.send("Request niet vanaf een bekende Bank gedaan, helaas");
+        return;
+    }
+    res.status(200);
     res.json({"status": "OK"});
 })
 
 
-//Test bericht
+//Test message
 app.get("/test", (req, res) => {
+    console.log('Test ontvangen');
+    console.log('IP: ' + req.ip);
+    console.log('WISB token: ' + req.headers['wisb-token'])
+    console.log(checkSender(req.ip, req.headers['wisb-token']));
+    res.status(200);
     res.send('Groetjes van Hidde');
 })
 
@@ -193,4 +411,5 @@ app.get("/test", (req, res) => {
 app.listen(8080, () => {
     console.log("Server is gestart op poort 8080");
 })
+
 
