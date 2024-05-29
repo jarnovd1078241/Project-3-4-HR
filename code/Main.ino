@@ -51,7 +51,9 @@ char buffer[3];
 byte rowPins[ROWS] = {42, 43, 44, 45}; 
 byte colPins[COLS] = {46, 47, 48, 49}; 
 
-Stepper dispenser1 = Stepper(stepsPerRevolution, 41, 40, 39, 38);
+Stepper dispenser1 = Stepper(stepsPerRevolution, 38, 39, 40, 41);
+Stepper dispenser2 = Stepper(stepsPerRevolution, 37, 36, 35, 34);
+Stepper dispenser3 = Stepper(stepsPerRevolution, 33, 32, 31, 30);
 
 Keypad bankKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 int button1value = 1;
@@ -104,8 +106,18 @@ void loop() {
     if(receivedData.length() > 10){
       String parts[5];
       splitString(receivedData, "/", parts);
-      x = parts[1].toInt()/10;
-      for(int i = 0; i < x; i++) {
+      x = parts[1].toInt();
+
+      int dispenseMotor3 = x / 50;
+      x %= 50;
+  
+      int dispenseMotor2 = x / 20;
+      x %= 20;
+  
+      int dispenseMotor1 = x / 10;
+      x %= 10;
+  
+      for (int i = 0; i < dispenseMotor1; i++) {
         // Rotate CCW quickly at 15 RPM for one revolution
         dispenser1.setSpeed(15);
         int totalSteps1 = stepsPerRevolution * 1;
@@ -113,11 +125,42 @@ void loop() {
 
         // Rotate CW quickly at 15 RPM for half a revolution
         dispenser1.setSpeed(15);
-        int totalSteps2 = stepsPerRevolution * 0.5;
+        int totalSteps2 = stepsPerRevolution * 0.25;
         dispenser1.step(totalSteps2);
         delay(10);
       }
+  
+      // Rotate dispenser2 (£20)
+      for (int i = 0; i < dispenseMotor2; i++) {
+        // Rotate CCW quickly at 15 RPM for one revolution
+        dispenser2.setSpeed(15);
+        int totalSteps1 = stepsPerRevolution * 1;
+        dispenser2.step(-totalSteps1);
+
+        // Rotate CW quickly at 15 RPM for half a revolution
+        dispenser2.setSpeed(15);
+        int totalSteps2 = stepsPerRevolution * 0.25;
+        dispenser2.step(totalSteps2);
+        delay(10);
+      }
+  
+      // Rotate dispenser3 (£50)
+      for (int i = 0; i < dispenseMotor3; i++) {
+        // Rotate CCW quickly at 15 RPM for one revolution
+        dispenser3.setSpeed(15);
+        int totalSteps1 = stepsPerRevolution * 1;
+        dispenser3.step(-totalSteps1);
+
+        // Rotate CW quickly at 15 RPM for half a revolution
+        dispenser3.setSpeed(15);
+        int totalSteps2 = stepsPerRevolution * 0.25;
+        dispenser3.step(totalSteps2);
+        delay(10);
+      }
+
       Serial.println("G");
+
+      delay(100);
 
       printer.setSize('M'); 
       printer.justify('C');
@@ -142,19 +185,30 @@ void loop() {
       printer.justify('R');
       printer.println("");
       printer.println("TOTAAL BEDRAG: " + parts[1]);
-      printer.justify('C');
+      //printer.justify('C');
       printer.println("--------------------------------");
+      printer.println("");
 
       printer.feed(2);
       printer.sleep();      
-      delay(30L);        
+      delay(300L);        
       printer.wake();       
-      printer.setDefault(); 
-      Serial.println("B");
+      printer.setDefault();
 
     } else {
-      x = receivedData.toInt()/10;
-      for(int i = 0; i < x; i++) {
+      x = receivedData.toInt();
+      // Calculate the number of full rotations for each dispenser
+      int dispenseMotor3 = x / 50;
+      x %= 50;
+  
+      int dispenseMotor2 = x / 20;
+      x %= 20;
+  
+      int dispenseMotor1 = x / 10;
+      x %= 10;
+  
+      // Rotate dispenser1 (£10)
+      for (int i = 0; i < dispenseMotor1; i++) {
         // Rotate CCW quickly at 15 RPM for one revolution
         dispenser1.setSpeed(15);
         int totalSteps1 = stepsPerRevolution * 1;
@@ -162,11 +216,38 @@ void loop() {
 
         // Rotate CW quickly at 15 RPM for half a revolution
         dispenser1.setSpeed(15);
-        int totalSteps2 = stepsPerRevolution * 0.5;
+        int totalSteps2 = stepsPerRevolution * 0.25;
         dispenser1.step(totalSteps2);
         delay(10);
       }
-      Serial.println("G");
+  
+      // Rotate dispenser2 (£20)
+      for (int i = 0; i < dispenseMotor2; i++) {
+        // Rotate CCW quickly at 15 RPM for one revolution
+        dispenser2.setSpeed(15);
+        int totalSteps1 = stepsPerRevolution * 1;
+        dispenser2.step(-totalSteps1);
+
+        // Rotate CW quickly at 15 RPM for half a revolution
+        dispenser2.setSpeed(15);
+        int totalSteps2 = stepsPerRevolution * 0.25;
+        dispenser2.step(totalSteps2);
+        delay(10);
+      }
+  
+      // Rotate dispenser3 (£50)
+      for (int i = 0; i < dispenseMotor3; i++) {
+        // Rotate CCW quickly at 15 RPM for one revolution
+        dispenser3.setSpeed(15);
+        int totalSteps1 = stepsPerRevolution * 1;
+        dispenser3.step(-totalSteps1);
+
+        // Rotate CW quickly at 15 RPM for half a revolution
+        dispenser3.setSpeed(15);
+        int totalSteps2 = stepsPerRevolution * 0.25;
+        dispenser3.step(totalSteps2);
+        delay(10);
+      }
     }
   }
 }
