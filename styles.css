@@ -1,0 +1,513 @@
+/* Algemene opmaak van de pagina */
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: lightgray;
+    padding: 50px;
+}
+
+h1 {
+    position: relative;
+    top: 15px;
+}
+
+section {
+    display: none;
+    padding: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+    align-items: center;
+}
+
+section.show {
+    position: relative;
+    top: 80px;
+    display: inline-block;
+}
+
+.logo {
+    position: fixed;
+    top: 50px;
+    left: 50px;
+    width: 200px; 
+    height: auto; 
+    border-radius: 10px;
+}
+
+
+#button-container {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
+
+.button {
+    position: absolute;
+    padding: 20px;
+    background-color: darkgray;
+    color: black; 
+    border-radius: 5px;
+    width: 150px; 
+    height: 40px;
+    text-align: center;
+    line-height: 40px;
+    z-index: 1;
+}
+
+
+/* ----------page0---pinpas---------- */
+
+#page0 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page0 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page0 h2{
+    font-size: 60px;
+    position: relative;
+    top: -50px;
+}
+
+#page0 p{
+    position: relative;
+    top: -70px;
+}
+
+#page0 .pinpas {
+    position: relative;
+    top: -10px;
+}
+
+
+/* ----------page1---pincode---------- */
+
+#page1 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page1 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page1 h2{
+    font-size: 50px;
+    position: relative;
+    top: -50px;
+}
+
+#page1 p{
+    position: relative;
+    top: -80px;
+}
+
+#page1 .pincode {
+    position: relative;
+    top: -70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#page1 .strepenvak {
+    background-color: lightgrey;
+    color: #1D1D1B;
+    border-radius: 10px;
+    width: 200px;
+    height: 70px;
+    text-align: center;
+    line-height: 65px;
+    font-size: 55px;
+    border: 5px solid #1D1D1B;
+}
+
+#page1 .cijfervak {
+    position: relative;
+    top: -68px;
+    left: 18px;
+    width: 200px;
+    height: 70px;
+    text-align: left;
+    font-size: 68px;
+}
+
+
+#page1 .keypadfoto {
+    position: relative;
+    top: -60px;
+    width: 170px; /* Aanpassen aan de gewenste breedte */
+    height: 310px;
+}
+
+
+/* ----------page2---home---------- */
+
+#page2 .container {
+    position: relative;
+    background-color: gainsboro;
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page2 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page2 h2{
+    font-size: 55px;
+    position: relative;
+    top: -50px;
+}
+
+#page2 p{
+    position: relative;
+    top: -70px;
+}
+
+#page2 .saldo {
+    top: 200px;
+    left: 0px;
+}
+
+#page2 .snel-opnemen {
+    bottom: 50px;
+    right: 0px;
+}
+
+#page2 .opnemen {
+    top: 200px;
+    right: 0px;
+}
+
+#page2 .cancel {
+    bottom: 50px;
+    left: 0px;
+}
+
+
+/* ----------page3---saldo---------- */
+
+#page3 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page3 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page3 h2 {
+    font-size: 60px;
+    position: relative;
+    top: -10px;
+}
+
+#page3 h3 {
+    position: relative;
+    top: 40px;
+    font-size: 60px;
+    color: green;
+}
+
+#page3 p{
+    position: relative;
+    top: -70px;
+}
+
+#page3 .terug {
+    bottom: 50px;
+    left: 0px;
+}
+
+
+/* ----------page4---opnemen---------- */
+
+#page4 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page4 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page4 h2{
+    font-size: 60px;
+    position: relative;
+    top: -50px;
+}
+
+#page4 p{
+    position: relative;
+    top: -70px;
+}
+
+#page4 .honderd {
+    top: 200px;
+    right: 0px;
+}
+
+#page4 .dertig {
+    bottom: 50px;
+    right: 0px;
+}
+
+#page4 .anders {
+    top: 200px;
+    left: 0px;
+}
+
+#page4 .terug {
+    bottom: 50px;
+    left: 0px;
+}
+
+/* ----------page9---anders---------- */
+
+#page9 .container {
+    position: relative;
+    background-color: gainsboro;
+    text-align: center;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    width: 700px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#page9 h1{
+    font-size: 35px;
+    position: relative;
+    top: 0px;
+}
+
+#page9 p{
+    position: relative;
+    top: 10px;
+}
+
+#page9 .bedrag {
+    margin: 0 auto;
+    flex-direction: column;
+    position: relative;
+    top: 70px;
+    background-color: lightgrey;
+    width: 500px;
+    height: 120px;
+    text-align: center;
+    line-height: 120px;
+    font-size: 55px;
+    border: 5px solid #1D1D1B;
+    border-radius: 10px;
+    font-size: 70px;
+}
+
+#page9 .terug {
+    bottom: 50px;
+    left: 0px;
+}
+
+#page9 .verder {
+    bottom: 50px;
+    right: 0px;
+}
+
+/* ----------page10---controle---------- */
+
+#page10 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+}
+
+#page10 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page10 h1{
+    font-size: 40px;
+    position: relative;
+    top: 0px;
+}
+
+#page10 .controlebedrag {
+    position: relative;
+    top: 70px;
+    width: 500px;
+    height: 120px;
+    text-align: center;
+    color: green;
+    line-height: 120px;
+    font-size: 55px;
+    font-size: 70px;
+}
+
+#page10 .terug {
+    bottom: 50px;
+    left: 0px;
+}
+
+#page10 .verder {
+    bottom: 50px;
+    right: 0px;
+}
+
+/* ----------page5---loading---------- */
+
+#page5 .container {
+    position: relative;
+    background-color: lightgrey;
+    padding: 20px; 
+    border-radius: 20px; 
+    width: 700px;
+    height: 500px;
+}
+
+#page5 .content {
+    text-align: center;
+}
+
+#page5 h2{
+    font-size: 35px;
+    position: relative;
+    top: -20px;
+}
+
+#page5 p{
+    position: relative;
+    top: -70px;
+}
+
+#page5 .loading {
+    position: relative;
+    top: 100px;
+}
+
+/* ----------page6---bedankt---------- */
+
+#page6 .container {
+    position: relative;
+    background-color: lightgrey;
+    padding: 20px; 
+    border-radius: 20px; 
+    /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);  */
+    width: 700px;
+    height: 500px;
+}
+
+#page6 .content {
+    text-align: center;
+}
+
+#page6 h2{
+    font-size: 60px;
+    position: relative;
+    top: 50px;
+}
+
+
+/* ----------page7---bon---------- */
+
+#page7 .container {
+    position: relative;
+    background-color: gainsboro; /* Achtergrondkleur van de container */
+    padding: 20px; /* Binnenste ruimte van de container */
+    border-radius: 20px; /* Afgeronde hoeken voor de container */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Schaduw-effect voor de container */
+    width: 700px;
+    height: 500px;
+}
+
+#page7 .content {
+    text-align: center; /* Centreer tekst in de container */
+}
+
+#page7 h2{
+    font-size: 50px;
+    position: relative;
+    top: 100px;
+}
+
+
+#page7 .bonja {
+    bottom: 50px;
+    right: 0px;
+}
+
+#page7 .bonnee {
+    bottom: 50px;
+    left: 0px;
+}
+
+/* ----------page11---Wachten---------- */
+
+#page11 .container {
+    position: relative;
+    background-color: lightgrey;
+    padding: 20px; 
+    border-radius: 20px; 
+    /* box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);  */
+    width: 700px;
+    height: 500px;
+}
+
+#page11 .content {
+    text-align: center;
+}
+
+#page11 h1{
+    font-size: 70px;
+    position: relative;
+    top: 20px;
+}
+
+#page11 p{
+    font-size: 30px;
+    position: relative;
+    top: 50px;
+}
+
+
+
