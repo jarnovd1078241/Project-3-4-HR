@@ -15,8 +15,8 @@ app.use(cors());
 //Create database connections details
 const connection = mysql.createConnection({
     host: 'localhost',
-    user: 'hidde',
-    password: 'hidde',
+    user: '*****',
+    password: '*****',
     database: 'wwbdatabase'
 });
 
